@@ -3,8 +3,10 @@
 // サンプル
 // 2014/03/13 N.Kobyasahi
 //
-using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Events;
 
 // 必要なコンポーネントの列記
 [RequireComponent(typeof (Animator))]
@@ -41,10 +43,15 @@ public class UnityChanControlScriptWithRgidBody : MonoBehaviour
 	private Animator anim;							// キャラにアタッチされるアニメーターへの参照
 	private AnimatorStateInfo currentBaseState;			// base layerで使われる、アニメーターの現在の状態の参照
 
-	private GameObject cameraObject;	// メインカメラへの参照
-		
-// アニメーター各ステートへの参照
-	static int idleState = Animator.StringToHash("Base Layer.Idle");
+	private GameObject cameraObject;    // メインカメラへの参照
+    
+
+    public GameObject fire;
+
+    public GameObject startPos;
+
+    // アニメーター各ステートへの参照
+    static int idleState = Animator.StringToHash("Base Layer.Idle");
 	static int locoState = Animator.StringToHash("Base Layer.Locomotion");
 	static int jumpState = Animator.StringToHash("Base Layer.Jump");
 	static int restState = Animator.StringToHash("Base Layer.Rest");
@@ -62,24 +69,24 @@ public class UnityChanControlScriptWithRgidBody : MonoBehaviour
 		// CapsuleColliderコンポーネントのHeight、Centerの初期値を保存する
 		orgColHight = col.height;
 		orgVectColCenter = col.center;
-}
+    }
 	
 	
 // 以下、メイン処理.リジッドボディと絡めるので、FixedUpdate内で処理を行う.
 	void FixedUpdate ()
-	{
-		float h = Input.GetAxis("Horizontal");				// 入力デバイスの水平軸をhで定義
+    {
+        float h = Input.GetAxis("Horizontal");				// 入力デバイスの水平軸をhで定義
 		float v = Input.GetAxis("Vertical");				// 入力デバイスの垂直軸をvで定義
 		anim.SetFloat("Speed", v);							// Animator側で設定している"Speed"パラメタにvを渡す
 		anim.SetFloat("Direction", h); 						// Animator側で設定している"Direction"パラメタにhを渡す
 		anim.speed = animSpeed;								// Animatorのモーション再生速度に animSpeedを設定する
 		currentBaseState = anim.GetCurrentAnimatorStateInfo(0);	// 参照用のステート変数にBase Layer (0)の現在のステートを設定する
 		rb.useGravity = true;//ジャンプ中に重力を切るので、それ以外は重力の影響を受けるようにする
-		
-		
-		
-		// 以下、キャラクターの移動処理
-		velocity = new Vector3(0, 0, v);		// 上下のキー入力からZ軸方向の移動量を取得
+
+        UpdateEffect();
+
+        // 以下、キャラクターの移動処理
+        velocity = new Vector3(0, 0, v);		// 上下のキー入力からZ軸方向の移動量を取得
 		// キャラクターのローカル空間での方向に変換
 		velocity = transform.TransformDirection(velocity);
 		//以下のvの閾値は、Mecanim側のトランジションと一緒に調整する
@@ -123,7 +130,7 @@ public class UnityChanControlScriptWithRgidBody : MonoBehaviour
 		// 現在のベースレイヤーがjumpStateの時
 		else if(currentBaseState.nameHash == jumpState)
 		{
-			cameraObject.SendMessage("setCameraPositionJumpView");	// ジャンプ中のカメラに変更
+			//cameraObject.SendMessage("setCameraPositionJumpView");	// ジャンプ中のカメラに変更
 			// ステートがトランジション中でない場合
 			if(!anim.IsInTransition(0))
 			{
@@ -184,9 +191,32 @@ public class UnityChanControlScriptWithRgidBody : MonoBehaviour
 				anim.SetBool("Rest", false);
 			}
 		}
-	}
 
-	void OnGUI()
+    }
+
+
+    void UpdateEffect()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            BeginEffect();
+        }
+    }
+
+   void BeginEffect()
+    {
+        Vector3 pos = startPos.transform.position;
+
+        Quaternion rotation = Quaternion.identity;
+
+        GameObject clone;
+        
+        clone = GameObject.Instantiate(fire, pos, rotation);
+        Destroy(clone, 5);
+        
+    }
+
+    /*void OnGUI()
 	{
 		GUI.Box(new Rect(Screen.width -260, 10 ,250 ,150), "Interaction");
 		GUI.Label(new Rect(Screen.width -245,30,250,30),"Up/Down Arrow : Go Forwald/Go Back");
@@ -195,11 +225,11 @@ public class UnityChanControlScriptWithRgidBody : MonoBehaviour
 		GUI.Label(new Rect(Screen.width -245,90,250,30),"Hit Spase key while Stopping : Rest");
 		GUI.Label(new Rect(Screen.width -245,110,250,30),"Left Control : Front Camera");
 		GUI.Label(new Rect(Screen.width -245,130,250,30),"Alt : LookAt Camera");
-	}
+	}*/
 
 
-	// キャラクターのコライダーサイズのリセット関数
-	void resetCollider()
+    // キャラクターのコライダーサイズのリセット関数
+    void resetCollider()
 	{
 	// コンポーネントのHeight、Centerの初期値を戻す
 		col.height = orgColHight;
